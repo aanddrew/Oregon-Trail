@@ -1,0 +1,8 @@
+﻿Kansas River Crossing
+102mi        4ft
+Big Blue River Crossing
+185mi        3ft
+Green River Crossing
+1151mi        5ft
+Snake River Crossing
+1534mi        5ft
