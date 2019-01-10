@@ -476,6 +476,7 @@ int Game::doTurn()
 	choice = stoi(temp);
 	switch(choice)
 	{
+		//RESTING
 		case 1:
 		{
 			cout << "How many days would you like to rest?" << endl;
@@ -502,6 +503,7 @@ int Game::doTurn()
 			}
 		}
 			break;
+		//CONTINUING
 		case 2:
 		{
 			int dist = 70 + rand() %70;
@@ -509,6 +511,9 @@ int Game::doTurn()
 			if (distToLastRiver == 0)
 			{
 				cout << "You must cross the " << riverNames[p.getLastRiver()] << "." << endl;
+				cout << "The only way across is by taking a ferry and paying $10." << endl;
+				cout << "You pay $10." << endl;
+				p.payMoney(10);
 			}
 
 			//deciding how to move them if they are close to a river or fort...
@@ -578,6 +583,7 @@ int Game::doTurn()
 			c.advance(14);
 		}
 			break;
+		//HUNTING
 		case 3:
 		{
 			//placeholder
@@ -684,7 +690,93 @@ int Game::doTurn()
 	float prob = ((numerator/denominator) - 1)/10;
 	if (rand()%1000 < prob * 1000)
 	{
-		cout << "RAIDERS" << endl;
+		cout << "You encounter a wild band of RAIDERS!" << endl;
+		cout << "Would you like to:" << endl;
+		cout << "\t1. Run?" << endl;
+		cout << "\t2. Attack?" << endl;
+		cout << "\t3. Surrender?" << endl;
+		cin >> temp;
+		choice = stoi(temp);
+		switch(choice)
+		{
+			//RUNNING
+			case 1:
+			{
+				cout << "You escape, but in your hurry to flee, you left behind: " << endl;
+				cout << "1 oxen, 10 lbs of food, and ";
+				p.addOxen(-1);
+				p.addFood(-10);
+				int part = rand() % 3;
+				switch (part)
+				{
+					case 0:
+					{
+						cout << "A wagon wheel..." << endl;
+						if (p.getExtraWheels() > 0)
+						{
+							cout << "You used 1 spare wheel to repair it." << endl;
+							p.addExtraWheels(-1);
+						}
+						else
+						{
+							cout << "You have no spare wheels, you cannot repair it." << endl;
+							return 6;
+						}
+					} break;
+					case 1:
+					{
+						cout << "A wagon axle..." << endl;
+						if (p.getExtraAxles() > 0)
+						{
+							cout << "You used 1 spare axle to repair it." << endl;
+							p.addExtraAxles(-1);
+						}
+						else
+						{
+							cout << "You have no spare axles, you cannot repair it." << endl;
+							return 6;
+						}
+					} break;
+					case 2:
+					{
+						cout << "A wagon tongue..." << endl;
+						if (p.getExtraTongues() > 0)
+						{
+							cout << "You used 1 spare tongue to repair it." << endl;
+							p.addExtraTongues(-1);
+						}
+						else
+						{
+							cout << "You have no spare tongues, you cannot repair it." << endl;
+							return 6;
+						}
+					} break;
+				}
+
+			} break;
+			//ATTACKING
+			case 2:
+			{
+				cout << "Bring it on!" << endl;
+				if (puzzle())
+				{
+					cout << "You won! You gained 50 lbs of food and 50 bullets!" << endl;
+					p.addFood(50);
+					p.addBullets(50);
+				}
+				else
+				{
+					cout << "You lost! You lost $" << p.getMoney()/4 << " and 50 bullets. :(" << endl;
+					p.payMoney(p.getMoney()/4);
+					p.addBullets(-50);
+				}
+			} break;
+			//SURRENDERING
+			case 3:
+			{
+
+			} break;
+		}
 	}
 	//MISFORTUNE probability
 	if (rand() %10 <= 3)
