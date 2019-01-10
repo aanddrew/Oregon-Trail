@@ -358,6 +358,7 @@ void Game::shop(int storeNum)
 							choice = stoi(temp);
 							p.payMoney(price * choice);
 							cout << "You bought " << choice << " medical kits for $" << price* choice << "!" << endl;
+							p.addMedicalKits(choice);
 						}
 							break;
 					}
@@ -381,6 +382,8 @@ void Game::shop(int storeNum)
 */
 int Game::doTurn()
 {
+	string temp;
+	int choice;
 	// cout << p.getExtraWheels() << endl;
 	// cout << p.getExtraAxles()  << endl;
 	// cout << p.getExtraTongues()<< endl;
@@ -394,6 +397,11 @@ int Game::doTurn()
 		cout << "You are dead!" << endl;
 		return 6;
 	}
+	else if(p.getFood() < 0)
+	{
+		cout << "You ran out of food!" << endl;
+		return 6;
+	}
 
 	//get the number that is alive.
 	int numAlive = 0;
@@ -402,8 +410,40 @@ int Game::doTurn()
 		if (p.isAliveAt(i)) numAlive++;
 	}
 
+	bool medicalKitUsed[5] = {false, false, false, false, false};
+
+	for (int i = 0; i < 5; i++)
+	{
+		if (p.isSickAt(i) && p.isAliveAt(i))
+		{
+			cout << p.getNameAt(i) << " is sick!" << endl;
+			if (p.getMedicalKits() > 0)
+			{
+				cout << "Would you like to use a medical kit? (Y/N)" << endl;
+				cout << "If you continue withOUT using one they have a 70 percent chance of death." << endl;
+				cout << "If you continue WITH using a medical kit they have a 50 percent chance of death." << endl;
+				cout << "If you rest without using one they have a 30 percent chance of death." << endl;
+				cin >> temp;
+				if (temp == "Y" || temp == "y")
+				{
+					p.addMedicalKits(-1);
+					medicalKitUsed[i] = true;
+				}
+			}
+			else
+			{
+				cout << "You have no medical kits." << endl;
+				cout << "If you rest they have a 30 percent chance of death." << endl;
+				cout << "If you continue they have a 70 percent chance of death." << endl;
+			}
+		}
+	}
+
 	int distToNextFort  = fortMiles[p.getLastFort()+1] - p.getMiles();
 	int distToNextRiver = riverMiles[p.getLastRiver()+1] - p.getMiles();
+
+	int distToLastFort  = fortMiles[p.getLastFort()] - p.getMiles();
+	int distToLastRiver = riverMiles[p.getLastRiver()] - p.getMiles();
 
 	bool fortNext;
 	fortNext = (distToNextFort < distToNextRiver);
@@ -411,6 +451,10 @@ int Game::doTurn()
 	cout << "---------------------------------------------" << endl;
 	cout << "The current date is: " << c.getDateString() << endl;
 	cout << "You have travelled " << p.getMiles() << " miles." << endl;
+	if (distToLastFort == 0)
+	{
+		cout << "You are currently in " << fortNames[p.getLastFort()] << endl;
+	}
 	if (fortNext) cout << "The distance to " << fortNames[p.getLastFort()+1]   << " is " << distToNextFort  << " miles." << endl;
 	else 		  cout << "The distance to " << riverNames[p.getLastRiver()+1] << " is " << distToNextRiver << " miles." << endl;
 	cout << "You have " << p.getFood() << " pounds of food available." << endl;
@@ -422,9 +466,14 @@ int Game::doTurn()
 	cout << "\t2. Continue on the trail?" << endl;
 	cout << "\t3. Hunt?" << endl;
 	cout << "\t4. Quit?" << endl;
-	string temp;
+
+	if (distToLastFort == 0)
+	{
+		cout << "\t5. Shop?" << endl;
+	}
+
 	cin >> temp;
-	int choice = stoi(temp);
+	choice = stoi(temp);
 	switch(choice)
 	{
 		case 1:
@@ -434,11 +483,35 @@ int Game::doTurn()
 			choice = stoi(temp);
 			c.advance(choice);
 			p.addFood(-1*(3*numAlive*choice));
+
+			for (int i = 0; i < 5; i++)
+			{
+				if (p.isSickAt(i) && p.isAliveAt(i))
+				{
+					if (rand() %100 < 30)
+					{
+						cout << p.getNameAt(i) << " is dead!" << endl;
+						p.kill(i);
+					}
+					else
+					{
+						cout << p.getNameAt(i) << " is no longer sick." << endl;
+						p.cure(i);
+					}
+				}
+			}
 		}
 			break;
 		case 2:
 		{
 			int dist = 70 + rand() %70;
+			//they must cross the river if they reach it
+			if (distToLastRiver == 0)
+			{
+				cout << "You must cross the " << riverNames[p.getLastRiver()] << "." << endl;
+			}
+
+			//deciding how to move them if they are close to a river or fort...
 			if (fortNext)
 			{
 				if (dist > distToNextFort)
@@ -464,18 +537,141 @@ int Game::doTurn()
 					p.advance(dist);
 				}
 			}
+
+			//checking if sick players die
+			for (int i = 0; i < 5; i++)
+			{
+				if (p.isSickAt(i) && p.isAliveAt(i))
+				{
+					if (medicalKitUsed[i])
+					{
+						if (rand() %100 < 50)
+						{
+							cout << p.getNameAt(i) << " is dead!" << endl;
+							p.kill(i);
+						}
+						else
+						{
+							cout << p.getNameAt(i) << " is no longer sick." << endl;
+							p.cure(i);
+						}
+					}
+					else
+					{
+						if (rand() %100 < 70)
+						{
+							cout << p.getNameAt(i) << " is dead!" << endl;
+							p.kill(i);
+						}
+						else
+						{
+							cout << p.getNameAt(i) << " is no longer sick." << endl;
+							p.cure(i);
+						}
+					}
+				}
+			}
+
+			//continuing takes two weeks, during which each alive player consumes 3 pounds of food
 			p.addFood(-1*(3*14*numAlive));
+			//calendar advancing two weeks
 			c.advance(14);
 		}
 			break;
 		case 3:
 		{
-			cout << "You are now hunting..." << endl;
+			//placeholder
+			// cout << "You are now hunting..." << endl;
+
+			//this is the list of probabilities for each animal
+			int probs[5] = {50, 25, 15, 7, 5};
+			string animalNames[5];
+			animalNames[0] = "rabbit";
+			animalNames[1] = "fox";
+			animalNames[2] = "deer";
+			animalNames[3] = "bear";
+			animalNames[4] = "moose";
+			int numBullets[5] = {10, 8, 5, 10, 12};
+			int pounds[10] = {2,2,5,5,30,55,100,350,300,600};
+
+
+			int totalFood = 0;
+			bool animalFound = false;
+			for (int i = 0; i < 5; i++)
+			{
+				int val = rand() % 100;
+				if (val < probs[i])
+				{
+					animalFound = true;
+					cout << "You found a ";
+					cout << animalNames[i] << endl;
+					cout << "Do you want to hunt it? (Y/N)" << endl;
+					cin >> temp;
+					if (temp == "Y" || temp == "y")
+					{
+						if (p.getBullets() >= numBullets[i])
+						{
+							if (puzzle())
+							{
+								// cout << "Congratulations! You just got a " << animalNames[i] << "!" << endl;
+								cout << "Nice! You just got a " << animalNames[i] << "!" << endl;
+								cout << "You used " << numBullets[i] << " bullets." << endl;
+								p.addBullets(-1*numBullets[i]);
+								int range = pounds[(i*2)+1] - pounds[i*2];
+								cout << range << endl;
+								int received;
+								if (range != 0) received = pounds[i*2] + (rand() % range);
+								else received = pounds[i*2];
+								cout << "You received " << received << " pounds of food!" << endl;
+								totalFood += received;
+								cout << "You have earned " << totalFood << " pounds of food from this hunting day so far!" << endl;
+							}
+							else
+							{
+								cout << "You lost the " << animalNames[i] << "... Better luck next time!" << endl;
+							}
+						}
+						else
+						{
+							cout << "You don't have enough bullets, sorry!" << endl;
+						}
+					}
+				}
+			}
+
+			if (animalFound)
+			{
+				if (totalFood == 0)
+				{
+					cout << "Ouch... You found something but didnt catch it." << endl;
+				}
+				else
+				{
+					cout << "You found " << totalFood << " pounds of food!" << endl;
+				}
+				p.addFood(totalFood);
+			}
+			else
+			{
+				cout << "You didn't find any animals hunting. :(" << endl;
+				cout << "Better luck next time!" << endl;
+			}
+
+			c.advance(1);
+			p.addFood(-1*(3*numAlive));
 		}
 			break;
 		case 4:
 		{
 			return 4;
+		}
+			break;
+		case 5:
+		{
+			if (distToLastFort == 0)
+			{
+				shop(p.getLastFort() + 1);
+			}
 		}
 			break;
 	}
@@ -511,7 +707,13 @@ int Game::doTurn()
 			case 0:
 			{
 				int person = rand() % 5;
-				cout << p.getNameAt(person) << " is sick!" << endl;
+				if (person == 0)
+				{
+					cout << "YOU (The party leader) are sick!" << endl;
+					cout << "If you die you will lose!" << endl;
+				}
+				else cout << p.getNameAt(person) << " is sick!" << endl;
+				p.makeSick(person);
 			}
 				break;
 			case 1:
@@ -521,6 +723,7 @@ int Game::doTurn()
 				cout << "You now have " << p.getOxen() << " oxen." << endl;
 				cout << "If you run out of oxen, you will be unable to travel." << endl;
 			}
+				break;
 			case 2:
 			{
 				int part = rand()%3;
@@ -573,4 +776,26 @@ int Game::doTurn()
 			}
 		}
 	}
+}
+
+bool Game::puzzle()
+{
+	cout << "You have 3 tries to guess the correct number between 1 and 10." << endl;
+	cout << "The number does not change so don't put the same number twice." << endl;
+	int target = rand() % 10 +1;
+	string temp;
+	int choice;
+	for (int i = 0; i < 3; i++)
+	{
+		cout << i + 1 << ". ";
+		cin >> temp;
+		choice = stoi(temp);
+		if (choice == target)
+		{
+			cout << "Congratulations! You guessed the number correctly!" << endl;
+			return true;
+		}
+	}
+	cout << "You did not guess the number. :(" << endl;
+	return false;
 }

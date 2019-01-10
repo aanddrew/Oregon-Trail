@@ -72,6 +72,9 @@ public:
 	int getExtraTongues();
 	void addExtraTongues(int);
 
+	int getMedicalKits();
+	void addMedicalKits(int);
+
 	//reparing and breaking
 
 	bool repairWheel();

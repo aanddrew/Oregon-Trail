@@ -94,6 +94,9 @@ void Party::addExtraAxles(int axlesIn) {extraAxles += axlesIn;}
 int Party::getExtraTongues() {return extraTongues;}
 void Party::addExtraTongues(int tonguesIn) {extraTongues += tonguesIn;}
 
+int Party::getMedicalKits() {return medicalKits;}
+void Party::addMedicalKits(int num) {medicalKits += num;}
+
 bool Party::repairWheel()
 {
 	if (wagon.getWheels() == 4) return false;

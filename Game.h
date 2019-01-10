@@ -30,6 +30,8 @@ public:
 	Party initial();
 	void shop(int);
 	int doTurn();
+
+	bool puzzle();
 };
 
 #endif
